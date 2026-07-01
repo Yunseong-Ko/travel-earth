@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import GlobeAirportPicker, {
+  type GlobeAirportMarker,
+} from "@/components/GlobeAirportPicker";
 import ResultMap, { type MapPlace } from "@/components/ResultMap";
 import {
   ACTIVITY_LABELS,
   ACTIVITY_OPTIONS,
   AIRPORT_GEO,
+  ALL_DESTINATION_AIRPORTS,
   DESTINATION_REGION_OPTIONS,
   ORIGIN_REGION_MAP,
   ORIGIN_REGION_OPTIONS,
@@ -81,6 +85,7 @@ export default function Home() {
   const [activities, setActivities] = useState<ActivityTag[]>([]);
   const [mode, setMode] = useState<RecommendationMode>("BALANCED");
   const [step, setStep] = useState(0);
+  const [showIntro, setShowIntro] = useState(true);
   const [result, setResult] = useState<RecommendationResponse | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +152,25 @@ export default function Home() {
         .filter((p): p is MapPlace => p !== null),
     [candidateDestinations],
   );
+
+  // 진입 화면 지구본용: 전체 공항을 장식 마커로 (기능적 선택은 없음)
+  const heroMarkers = useMemo<GlobeAirportMarker[]>(() => {
+    const originCodes = new Set<string>(Object.values(ORIGIN_REGION_MAP).flat());
+    const destinationCodes = new Set<string>(ALL_DESTINATION_AIRPORTS);
+    return Object.entries(AIRPORT_GEO).map(([code, geo]) => {
+      const isOrigin = originCodes.has(code);
+      const isDestination = destinationCodes.has(code);
+      const role: GlobeAirportMarker["role"] =
+        isOrigin && isDestination ? "both" : isOrigin ? "origin" : "destination";
+      return {
+        code,
+        label: DESTINATION_LABELS[code] ?? geo.city,
+        lat: geo.lat,
+        lon: geo.lon,
+        role,
+      };
+    });
+  }, []);
 
   const mapOrigins = useMemo<MapPlace[]>(() => {
     const codes = ORIGIN_REGION_MAP[form.origin_region as OriginRegionCode] ?? [];
@@ -280,22 +304,38 @@ export default function Home() {
             떠오릅니다. 핀을 누르면 항공권·날씨·활동 근거를 보여줘요.
           </p>
         </div>
-        <div className="te-mode-toggle" role="tablist" aria-label="추천 모드">
-          {MODE_OPTIONS.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              className={mode === m.id ? "is-active" : ""}
-              onClick={() => setMode(m.id)}
-              title={m.hint}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+        {!showIntro && (
+          <div className="te-mode-toggle" role="tablist" aria-label="추천 모드">
+            {MODE_OPTIONS.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={mode === m.id ? "is-active" : ""}
+                onClick={() => setMode(m.id)}
+                title={m.hint}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
       </header>
 
-      <main className="te-main">
+      {showIntro ? (
+        <section className="te-intro">
+          <div className="te-intro-globe">
+            <GlobeAirportPicker markers={heroMarkers} showLabels={false} />
+          </div>
+          <button
+            type="button"
+            className="te-submit te-intro-cta"
+            onClick={() => setShowIntro(false)}
+          >
+            지도에서 찾기 시작하기 →
+          </button>
+        </section>
+      ) : (
+        <main className="te-main">
         <aside className="te-controls">
           <div className="te-step-head">
             <div className="te-step-progress">
@@ -641,7 +681,8 @@ export default function Home() {
             )}
           </div>
         </section>
-      </main>
+        </main>
+      )}
     </div>
   );
 }

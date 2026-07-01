@@ -12,10 +12,12 @@ export type GlobeAirportMarker = {
 
 type Props = {
   markers: GlobeAirportMarker[];
-  selectedOrigin: string | null;
-  selectedDestination: string | null;
-  pickMode: "origin" | "destination";
-  onSelectAirport: (airportCode: string) => void;
+  selectedOrigin?: string | null;
+  selectedDestination?: string | null;
+  pickMode?: "origin" | "destination";
+  onSelectAirport?: (airportCode: string) => void;
+  // 진입 화면 등 순수 장식용으로 쓸 때 모드/선택 텍스트 오버레이를 숨긴다.
+  showLabels?: boolean;
 };
 
 type ProjectedPoint = {
@@ -64,10 +66,11 @@ function projectPoint(
 
 export default function GlobeAirportPicker({
   markers,
-  selectedOrigin,
-  selectedDestination,
-  pickMode,
+  selectedOrigin = null,
+  selectedDestination = null,
+  pickMode = "origin",
   onSelectAirport,
+  showLabels = true,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const latestMarkersRef = useRef<ProjectedPoint[]>([]);
@@ -275,21 +278,23 @@ export default function GlobeAirportPicker({
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.fillStyle = "rgba(31,34,26,0.72)";
-      ctx.font = "600 12px Manrope, sans-serif";
-      const modeLabel = pickMode === "origin" ? "출발 선택 모드" : "도착 선택 모드";
-      ctx.fillText(modeLabel, 12, 20);
+      if (showLabels) {
+        ctx.fillStyle = "rgba(31,34,26,0.72)";
+        ctx.font = "600 12px Manrope, sans-serif";
+        const modeLabel = pickMode === "origin" ? "출발 선택 모드" : "도착 선택 모드";
+        ctx.fillText(modeLabel, 12, 20);
 
-      const selectedOriginLabel =
-        selectedOrigin && markerMap.get(selectedOrigin)
-          ? `${selectedOrigin} (${markerMap.get(selectedOrigin)?.label})`
-          : "-";
-      const selectedDestinationLabel =
-        selectedDestination && markerMap.get(selectedDestination)
-          ? `${selectedDestination} (${markerMap.get(selectedDestination)?.label})`
-          : "-";
-      ctx.fillText(`출발: ${selectedOriginLabel}`, 12, height - 26);
-      ctx.fillText(`도착: ${selectedDestinationLabel}`, 12, height - 10);
+        const selectedOriginLabel =
+          selectedOrigin && markerMap.get(selectedOrigin)
+            ? `${selectedOrigin} (${markerMap.get(selectedOrigin)?.label})`
+            : "-";
+        const selectedDestinationLabel =
+          selectedDestination && markerMap.get(selectedDestination)
+            ? `${selectedDestination} (${markerMap.get(selectedDestination)?.label})`
+            : "-";
+        ctx.fillText(`출발: ${selectedOriginLabel}`, 12, height - 26);
+        ctx.fillText(`도착: ${selectedDestinationLabel}`, 12, height - 10);
+      }
     }
 
     function render() {
@@ -353,7 +358,7 @@ export default function GlobeAirportPicker({
       }
 
       if (nearest && nearestDist <= 14) {
-        onSelectAirport(nearest.marker.code);
+        onSelectAirport?.(nearest.marker.code);
       }
     }
 
@@ -373,7 +378,15 @@ export default function GlobeAirportPicker({
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [markerMap, markers, onSelectAirport, pickMode, selectedDestination, selectedOrigin]);
+  }, [
+    markerMap,
+    markers,
+    onSelectAirport,
+    pickMode,
+    selectedDestination,
+    selectedOrigin,
+    showLabels,
+  ]);
 
   return <canvas ref={canvasRef} className="globe-canvas" />;
 }

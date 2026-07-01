@@ -102,6 +102,37 @@ a {
   color: #fff;
 }
 
+/* ---------- intro (globe hero) ---------- */
+.te-intro {
+  display: grid;
+  justify-items: center;
+  gap: 1.4rem;
+  padding: 1rem 0 0.5rem;
+}
+.te-intro-globe {
+  width: min(560px, 100%);
+  aspect-ratio: 1 / 1;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.globe-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+}
+.globe-canvas:active {
+  cursor: grabbing;
+}
+.te-intro-cta {
+  width: auto;
+  padding: 0.9rem 1.6rem;
+  font-size: 1rem;
+}
+
 /* ---------- layout ---------- */
 .te-main {
   display: grid;
