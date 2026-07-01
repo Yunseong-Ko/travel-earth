@@ -70,7 +70,8 @@ function scoreWidth(score: number): string {
 export default function Home() {
   const [form, setForm] = useState<FormState>({
     origin_region: ORIGIN_REGION_OPTIONS[0].id,
-    destination_regions: DESTINATION_REGION_OPTIONS.map((r) => r.id),
+    // 기본값: 국내 + 근접국(일본/대만·홍콩) 중심. 동남아는 선택 가능하지만 기본은 아님.
+    destination_regions: ["KOREA_DOMESTIC", "JAPAN", "TAIWAN_HK"],
     earliest_departure: isoAfterDays(14),
     latest_return: isoAfterDays(35),
     min_nights: "2",
@@ -298,10 +299,11 @@ export default function Home() {
       <header className="te-hero">
         <div>
           <p className="te-eyebrow">Travel EARTH</p>
-          <h1>지도에서 떠날 곳을 찾아요</h1>
+          <h1>국내부터 가까운 나라까지, 지도에서 떠날 곳을 찾아요</h1>
           <p className="te-sub">
-            날짜·예산·하고 싶은 활동을 정하면, 갈 수 있는 곳이 지도에 핀으로
-            떠오릅니다. 핀을 누르면 항공권·날씨·활동 근거를 보여줘요.
+            날짜·예산·하고 싶은 활동을 정하면, 국내와 일본·대만·홍콩처럼 가까운
+            곳부터 지도에 핀으로 떠오릅니다. 핀을 누르면 항공권·날씨·활동
+            근거를 보여줘요.
           </p>
         </div>
         {!showIntro && (
