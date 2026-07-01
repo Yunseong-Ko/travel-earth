@@ -282,6 +282,7 @@ export async function runRecommendationEngine(
           depart_date: itinerary.depart_date,
           return_date: itinerary.return_date,
           price_krw: offer.price_krw,
+          price_is_live: offer.is_live,
           weather_score: weatherScore,
           activity_score: activityScore,
           price_score: priceScore,

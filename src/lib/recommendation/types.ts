@@ -73,6 +73,7 @@ export type RecommendationItem = {
   depart_date: string;
   return_date: string;
   price_krw: number;
+  price_is_live: boolean;
   weather_score: number;
   activity_score: number;
   price_score: number;

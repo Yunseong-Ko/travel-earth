@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ResultMap, { type MapPlace } from "@/components/ResultMap";
 import {
   ACTIVITY_LABELS,
@@ -43,6 +43,16 @@ const MODE_OPTIONS: Array<{ id: RecommendationMode; label: string; hint: string 
   { id: "DEAL_FIRST", label: "딜 우선", hint: "가성비를 최우선" },
 ];
 
+const STEP_TITLES = [
+  "출발 지역",
+  "탐색 범위",
+  "하고 싶은 활동",
+  "예산 상한",
+  "여행 기간",
+  "날씨 선호",
+] as const;
+const LAST_STEP = STEP_TITLES.length - 1;
+
 function isoAfterDays(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() + days);
@@ -70,6 +80,7 @@ export default function Home() {
   });
   const [activities, setActivities] = useState<ActivityTag[]>([]);
   const [mode, setMode] = useState<RecommendationMode>("BALANCED");
+  const [step, setStep] = useState(0);
   const [result, setResult] = useState<RecommendationResponse | null>(null);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -178,12 +189,30 @@ export default function Home() {
     );
   }
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function goNext() {
+    if (step === 1 && form.destination_regions.length === 0) {
+      setError("탐색할 도착 지역을 최소 1개 선택해 주세요.");
+      return;
+    }
+    setError(null);
+    if (step >= LAST_STEP) {
+      runSearch();
+      return;
+    }
+    setStep((s) => Math.min(LAST_STEP, s + 1));
+  }
+
+  function goBack() {
+    setError(null);
+    setStep((s) => Math.max(0, s - 1));
+  }
+
+  async function runSearch() {
     setError(null);
 
     if (form.destination_regions.length === 0) {
       setError("탐색할 도착 지역을 최소 1개 선택해 주세요.");
+      setStep(1);
       return;
     }
 
@@ -268,213 +297,266 @@ export default function Home() {
 
       <main className="te-main">
         <aside className="te-controls">
-          <form onSubmit={onSubmit}>
-            <label className="te-field">
-              출발 지역
-              <select
-                value={form.origin_region}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, origin_region: e.target.value }))
-                }
-              >
-                {ORIGIN_REGION_OPTIONS.map((region) => (
-                  <option key={region.id} value={region.id}>
-                    {region.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="te-step-head">
+            <div className="te-step-progress">
+              {STEP_TITLES.map((title, idx) => (
+                <span
+                  key={title}
+                  className={`te-step-dot ${idx <= step ? "is-done" : ""} ${idx === step ? "is-current" : ""}`}
+                />
+              ))}
+            </div>
+            <p className="te-step-label">
+              <span className="te-step-count">
+                {step + 1}/{STEP_TITLES.length}
+              </span>{" "}
+              {STEP_TITLES[step]}
+            </p>
+          </div>
 
-            <div className="te-field">
-              <span>탐색 범위</span>
-              <div className="te-chips">
-                {DESTINATION_REGION_OPTIONS.map((region) => {
-                  const on = form.destination_regions.includes(region.id);
-                  return (
-                    <button
-                      type="button"
-                      key={region.id}
-                      className={`te-chip ${on ? "is-on" : ""}`}
-                      onClick={() => toggleRegion(region.id)}
-                    >
+          <div className="te-step-body">
+            {step === 0 && (
+              <label className="te-field">
+                출발 지역
+                <select
+                  value={form.origin_region}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, origin_region: e.target.value }))
+                  }
+                >
+                  {ORIGIN_REGION_OPTIONS.map((region) => (
+                    <option key={region.id} value={region.id}>
                       {region.label}
-                    </button>
-                  );
-                })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {step === 1 && (
+              <div className="te-field">
+                <span>어디까지 둘러볼까요?</span>
+                <div className="te-chips">
+                  {DESTINATION_REGION_OPTIONS.map((region) => {
+                    const on = form.destination_regions.includes(region.id);
+                    return (
+                      <button
+                        type="button"
+                        key={region.id}
+                        className={`te-chip ${on ? "is-on" : ""}`}
+                        onClick={() => toggleRegion(region.id)}
+                      >
+                        {region.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="te-field">
-              <span>
-                하고 싶은 활동{" "}
-                {activities.length > 0 && (
-                  <>
-                    <em className="te-count">{activities.length}</em>
-                    <button
-                      type="button"
-                      className="te-clear"
-                      onClick={() => setActivities([])}
-                    >
-                      해제
-                    </button>
-                  </>
-                )}
-              </span>
-              <div className="te-chips">
-                {ACTIVITY_OPTIONS.map((a) => {
-                  const on = activities.includes(a.id);
-                  return (
-                    <button
-                      type="button"
-                      key={a.id}
-                      className={`te-chip ${on ? "is-on" : ""}`}
-                      onClick={() => toggleActivity(a.id)}
-                    >
-                      {a.label}
-                    </button>
-                  );
-                })}
+            {step === 2 && (
+              <div className="te-field">
+                <span>
+                  하고 싶은 활동을 골라보세요 (안 골라도 돼요){" "}
+                  {activities.length > 0 && (
+                    <>
+                      <em className="te-count">{activities.length}</em>
+                      <button
+                        type="button"
+                        className="te-clear"
+                        onClick={() => setActivities([])}
+                      >
+                        해제
+                      </button>
+                    </>
+                  )}
+                </span>
+                <div className="te-chips">
+                  {ACTIVITY_OPTIONS.map((a) => {
+                    const on = activities.includes(a.id);
+                    return (
+                      <button
+                        type="button"
+                        key={a.id}
+                        className={`te-chip ${on ? "is-on" : ""}`}
+                        onClick={() => toggleActivity(a.id)}
+                      >
+                        {a.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
-            <label className="te-field">
-              <span>
-                예산 상한 <strong>{formatKrw(form.budget_max_krw)}</strong>
-              </span>
-              <input
-                type="range"
-                min={100000}
-                max={3000000}
-                step={50000}
-                value={form.budget_max_krw}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    budget_max_krw: Number(e.target.value),
-                  }))
-                }
-              />
-            </label>
-
-            <div className="te-row">
+            {step === 3 && (
               <label className="te-field">
-                출발 가능일
+                <span>
+                  예산 상한 <strong>{formatKrw(form.budget_max_krw)}</strong>
+                </span>
                 <input
-                  type="date"
-                  value={form.earliest_departure}
+                  type="range"
+                  min={100000}
+                  max={3000000}
+                  step={50000}
+                  value={form.budget_max_krw}
                   onChange={(e) =>
-                    setForm((p) => ({ ...p, earliest_departure: e.target.value }))
+                    setForm((p) => ({
+                      ...p,
+                      budget_max_krw: Number(e.target.value),
+                    }))
                   }
                 />
               </label>
-              <label className="te-field">
-                복귀 마감일
-                <input
-                  type="date"
-                  value={form.latest_return}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, latest_return: e.target.value }))
-                  }
-                />
-              </label>
-            </div>
+            )}
 
-            <div className="te-row">
-              <label className="te-field">
-                최소 박
-                <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={form.min_nights}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, min_nights: e.target.value }))
-                  }
-                />
-              </label>
-              <label className="te-field">
-                최대 박
-                <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={form.max_nights}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, max_nights: e.target.value }))
-                  }
-                />
-              </label>
-            </div>
+            {step === 4 && (
+              <>
+                <div className="te-row">
+                  <label className="te-field">
+                    출발 가능일
+                    <input
+                      type="date"
+                      value={form.earliest_departure}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          earliest_departure: e.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="te-field">
+                    복귀 마감일
+                    <input
+                      type="date"
+                      value={form.latest_return}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, latest_return: e.target.value }))
+                      }
+                    />
+                  </label>
+                </div>
 
-            <details className="te-advanced">
-              <summary>날씨 선호 (고급)</summary>
-              <div className="te-row">
-                <label className="te-field">
-                  최저 기온°C
+                <div className="te-row">
+                  <label className="te-field">
+                    최소 박
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={form.min_nights}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, min_nights: e.target.value }))
+                      }
+                    />
+                  </label>
+                  <label className="te-field">
+                    최대 박
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={form.max_nights}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, max_nights: e.target.value }))
+                      }
+                    />
+                  </label>
+                </div>
+
+                <label className="te-checkbox">
                   <input
-                    type="number"
-                    value={form.temp_min_c}
+                    type="checkbox"
+                    checked={form.nonstop_only}
                     onChange={(e) =>
-                      setForm((p) => ({ ...p, temp_min_c: e.target.value }))
+                      setForm((p) => ({ ...p, nonstop_only: e.target.checked }))
                     }
                   />
+                  무경유만
                 </label>
-                <label className="te-field">
-                  최고 기온°C
-                  <input
-                    type="number"
-                    value={form.temp_max_c}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, temp_max_c: e.target.value }))
-                    }
-                  />
-                </label>
-              </div>
-              <div className="te-row">
-                <label className="te-field">
-                  허용 강수%
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={form.max_precip_prob}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, max_precip_prob: e.target.value }))
-                    }
-                  />
-                </label>
-                <label className="te-field">
-                  허용 풍속 m/s
-                  <input
-                    type="number"
-                    min={1}
-                    max={30}
-                    step={0.5}
-                    value={form.max_wind_mps}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, max_wind_mps: e.target.value }))
-                    }
-                  />
-                </label>
-              </div>
-            </details>
+              </>
+            )}
 
-            <label className="te-checkbox">
-              <input
-                type="checkbox"
-                checked={form.nonstop_only}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, nonstop_only: e.target.checked }))
-                }
-              />
-              무경유만
-            </label>
+            {step === 5 && (
+              <>
+                <div className="te-row">
+                  <label className="te-field">
+                    최저 기온°C
+                    <input
+                      type="number"
+                      value={form.temp_min_c}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, temp_min_c: e.target.value }))
+                      }
+                    />
+                  </label>
+                  <label className="te-field">
+                    최고 기온°C
+                    <input
+                      type="number"
+                      value={form.temp_max_c}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, temp_max_c: e.target.value }))
+                      }
+                    />
+                  </label>
+                </div>
+                <div className="te-row">
+                  <label className="te-field">
+                    허용 강수%
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={form.max_precip_prob}
+                      onChange={(e) =>
+                        setForm((p) => ({
+                          ...p,
+                          max_precip_prob: e.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="te-field">
+                    허용 풍속 m/s
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      step={0.5}
+                      value={form.max_wind_mps}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, max_wind_mps: e.target.value }))
+                      }
+                    />
+                  </label>
+                </div>
+              </>
+            )}
 
-            <button type="submit" className="te-submit" disabled={loading}>
-              {loading ? "지도 그리는 중…" : "지도에서 찾기"}
-            </button>
             {error && <p className="te-error">{error}</p>}
-          </form>
+          </div>
+
+          <div className="te-step-nav">
+            {step > 0 && (
+              <button type="button" className="te-step-back" onClick={goBack}>
+                ← 이전
+              </button>
+            )}
+            <button
+              type="button"
+              className="te-submit"
+              disabled={loading}
+              onClick={goNext}
+            >
+              {loading
+                ? "지도 그리는 중…"
+                : step === LAST_STEP
+                  ? "지도에서 찾기"
+                  : "다음 →"}
+            </button>
+          </div>
         </aside>
 
         <section className="te-stage">
@@ -622,12 +704,20 @@ function DetailCard({ item }: { item: RecommendationItem }) {
           {item.destination_name}{" "}
           <span className="te-iata">{item.destination_iata}</span>
         </h3>
-        <span className="te-provider">{item.provider}</span>
+        <span className="te-provider">
+          {item.price_is_live ? item.provider : "추정가"}
+        </span>
       </div>
       <p className="te-window">
         {item.origin_iata} 출발 · {item.depart_date} → {item.return_date}
       </p>
       <p className="te-price">{formatKrw(item.price_krw)}</p>
+      {!item.price_is_live && (
+        <p className="te-honesty te-honesty--normal">
+          <span className="te-honesty-mark">⚠</span> 실제 항공권 API 미연동 ·
+          시세 추정치입니다 (예약 전 반드시 확인)
+        </p>
+      )}
 
       <p className="te-verdict">
         <span className="te-verdict-icon">{sky.icon}</span>
@@ -700,7 +790,7 @@ function DetailCard({ item }: { item: RecommendationItem }) {
         rel="noopener noreferrer"
         className="te-cta"
       >
-        항공권 보기 →
+        {item.price_is_live ? "항공권 보기 →" : "실제 요금 검색하기 →"}
       </a>
     </article>
   );

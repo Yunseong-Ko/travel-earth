@@ -39,6 +39,8 @@ export type FlightOffer = {
   total_duration_min: number;
   baggage_included: boolean;
   deeplink_url: string;
+  // API 키 미설정 시 합성한 가격인지 여부. 정직성 배지에 사용.
+  is_live: boolean;
 };
 
 type DestinationProfile = {
@@ -393,6 +395,7 @@ function parseSkyscannerOffer(
         total_duration_min: totalDurationMin > 0 ? totalDurationMin : 999,
         baggage_included: checkedPieces !== null ? checkedPieces > 0 : false,
         deeplink_url: deepLink,
+        is_live: true,
       };
     })
     .filter((item) => item !== null)
@@ -602,6 +605,7 @@ function parseAmadeusOffer(
         total_duration_min: totalDurationMin > 0 ? totalDurationMin : 999,
         baggage_included: hasCheckedBag,
         deeplink_url: deeplink,
+        is_live: true,
       };
     })
     .filter((item) => item !== null)
@@ -707,6 +711,7 @@ function searchSkyscannerMockOffer(input: FlightSearchInput): FlightOffer | null
     total_duration_min: priceAndDuration.total_duration_min,
     baggage_included: seeded(`${chaos}-bag`, 0, 1) > 0.45,
     deeplink_url: buildSkyscannerFallbackDeeplink(input),
+    is_live: false,
   };
 }
 
@@ -739,6 +744,7 @@ function searchAmadeusMockOffer(input: FlightSearchInput): FlightOffer | null {
     total_duration_min: priceAndDuration.total_duration_min,
     baggage_included: seeded(`${chaos}-bag`, 0, 1) > 0.57,
     deeplink_url: buildAmadeusFallbackDeeplink(input),
+    is_live: false,
   };
 }
 
