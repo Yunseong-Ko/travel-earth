@@ -131,9 +131,13 @@ export default function ResultMap({
         ]
           .filter(Boolean)
           .join(" ");
+        const priceLabel =
+          item.transport_mode === "GROUND"
+            ? "KTX·버스"
+            : krwShort(item.price_krw);
         const icon = L.divIcon({
           className: "te-mk-wrap",
-          html: `<div class="${cls}"><span class="te-mk-name">${place.name}</span><span class="te-mk-pin">${item.rank}</span><span class="te-mk-price">${krwShort(item.price_krw)}</span></div>`,
+          html: `<div class="${cls}"><span class="te-mk-name">${place.name}</span><span class="te-mk-pin">${item.rank}</span><span class="te-mk-price">${priceLabel}</span></div>`,
           iconSize: [38, 38],
           iconAnchor: [19, 19],
         });

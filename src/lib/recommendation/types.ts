@@ -1,8 +1,10 @@
 import { diffDaysIso } from "@/lib/recommendation/date";
 import {
   ALL_ACTIVITY_TAGS,
+  ALL_DESTINATION_AIRPORTS,
   ALL_DESTINATION_REGIONS,
   DESTINATION_REGION_OPTIONS,
+  GROUND_DESTINATION_CODES,
   ORIGIN_REGION_MAP,
   ORIGIN_REGION_OPTIONS,
   getDestinationAirportsByRegions,
@@ -13,7 +15,12 @@ import {
   type OriginRegionCode,
 } from "@/lib/recommendation/regions";
 
-export type ProviderCode = "SKYSCANNER" | "AMADEUS";
+const KNOWN_DESTINATION_CODES = new Set<string>([
+  ...ALL_DESTINATION_AIRPORTS,
+  ...GROUND_DESTINATION_CODES,
+]);
+
+export type ProviderCode = "SKYSCANNER" | "AMADEUS" | "GROUND";
 
 // 점수 가중치 프리셋. A(날씨우선) / B(딜우선) / 균형.
 export type RecommendationMode = "BALANCED" | "WEATHER_FIRST" | "DEAL_FIRST";
@@ -35,6 +42,28 @@ export const DESTINATION_LABELS: Record<string, string> = {
   CEB: "세부",
   DAD: "다낭",
   DPS: "발리",
+  GANGNEUNG: "강릉",
+  SOKCHO: "속초",
+  YANGYANG: "양양",
+  PYEONGCHANG: "평창",
+  JEONJU: "전주",
+  GYEONGJU: "경주",
+  TONGYEONG: "통영",
+  GEOJE: "거제",
+  NAMHAE: "남해",
+  SUNCHEON: "순천",
+  DAMYANG: "담양",
+  GAPYEONG: "가평",
+  CHUNCHEON: "춘천",
+  ANDONG: "안동",
+  MOKPO: "목포",
+  DANYANG: "단양",
+  TAEAN: "태안",
+  BOSEONG: "보성",
+  BORYEONG: "보령",
+  ASAN: "아산(온양온천)",
+  BUYEO: "부여",
+  GANGHWA: "강화",
 };
 
 export const DEFAULT_DESTINATIONS = getDestinationAirportsByRegions(
@@ -67,6 +96,8 @@ export type RecommendationRequest = {
 export type RecommendationItem = {
   rank: number;
   provider: ProviderCode;
+  // FLIGHT: 항공권 기반(공항). GROUND: 국내 근교, 기차/버스로 이동(항공권 축 없음).
+  transport_mode: "FLIGHT" | "GROUND";
   origin_iata: OriginIata;
   destination_iata: string;
   destination_name: string;
@@ -264,7 +295,7 @@ export function validateRecommendationRequest(raw: unknown): ValidationResult {
   if (Array.isArray(rawDestinations) && rawDestinations.length > 0) {
     const normalized = rawDestinations
       .map((item) => String(item).trim().toUpperCase())
-      .filter((item) => /^[A-Z]{3}$/.test(item));
+      .filter((item) => KNOWN_DESTINATION_CODES.has(item));
     candidateDestinations = [...new Set(normalized)];
     destinationRegions = ALL_DESTINATION_REGIONS;
   }

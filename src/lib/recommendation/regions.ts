@@ -11,11 +11,48 @@ export const ORIGIN_REGION_OPTIONS = [
   },
 ] as const;
 
+// 기차/버스로 가는 국내 근교 목적지 코드(공항 IATA 아님 — 항공권 축 없이 날씨+활동만으로 평가됨).
+export const GROUND_DESTINATION_CODES = [
+  "GANGNEUNG",
+  "SOKCHO",
+  "YANGYANG",
+  "PYEONGCHANG",
+  "JEONJU",
+  "GYEONGJU",
+  "TONGYEONG",
+  "GEOJE",
+  "NAMHAE",
+  "SUNCHEON",
+  "DAMYANG",
+  "GAPYEONG",
+  "CHUNCHEON",
+  "ANDONG",
+  "MOKPO",
+  "DANYANG",
+  "TAEAN",
+  "BOSEONG",
+  "BORYEONG",
+  "ASAN",
+  "BUYEO",
+  "GANGHWA",
+] as const;
+
+const GROUND_DESTINATION_SET = new Set<string>(GROUND_DESTINATION_CODES);
+
+export function isGroundOnlyDestination(code: string): boolean {
+  return GROUND_DESTINATION_SET.has(code);
+}
+
 export const DESTINATION_REGION_OPTIONS = [
   {
     id: "KOREA_DOMESTIC",
     label: "국내선",
     airports: ["CJU", "CJJ", "TAE", "KWJ", "RSU", "USN"],
+  },
+  {
+    id: "KOREA_GROUND",
+    label: "국내 근교(기차·버스)",
+    airports: [...GROUND_DESTINATION_CODES],
   },
   {
     id: "JAPAN",
@@ -125,6 +162,28 @@ export const DESTINATION_ACTIVITIES: Record<string, ActivityTag[]> = {
   CEB: ["BEACH", "DIVING", "NATURE", "RESORT"],
   DAD: ["BEACH", "CITY", "NATURE", "RESORT", "CULTURE"],
   DPS: ["BEACH", "SURFING", "DIVING", "NATURE", "RESORT"],
+  GANGNEUNG: ["BEACH", "FOOD", "NATURE", "NIGHTVIEW"],
+  SOKCHO: ["BEACH", "NATURE", "HIKING", "FOOD"],
+  YANGYANG: ["BEACH", "SURFING", "NATURE"],
+  PYEONGCHANG: ["NATURE", "HIKING"],
+  JEONJU: ["FOOD", "CULTURE"],
+  GYEONGJU: ["CULTURE", "NATURE"],
+  TONGYEONG: ["BEACH", "FOOD", "NATURE"],
+  GEOJE: ["BEACH", "NATURE"],
+  NAMHAE: ["BEACH", "NATURE"],
+  SUNCHEON: ["NATURE", "CULTURE"],
+  DAMYANG: ["NATURE"],
+  GAPYEONG: ["NATURE", "HIKING"],
+  CHUNCHEON: ["NATURE", "FOOD"],
+  ANDONG: ["CULTURE"],
+  MOKPO: ["BEACH", "FOOD", "CULTURE", "NIGHTVIEW"],
+  DANYANG: ["NATURE", "HIKING"],
+  TAEAN: ["BEACH"],
+  BOSEONG: ["NATURE"],
+  BORYEONG: ["BEACH"],
+  ASAN: ["HOTSPRING"],
+  BUYEO: ["CULTURE"],
+  GANGHWA: ["NATURE", "CULTURE"],
 };
 
 export function getDestinationActivities(
@@ -156,4 +215,26 @@ export const AIRPORT_GEO: Record<
   CEB: { city: "세부", lat: 10.3075, lon: 123.9792 },
   DAD: { city: "다낭", lat: 16.0544, lon: 108.2022 },
   DPS: { city: "발리", lat: -8.7482, lon: 115.167 },
+  GANGNEUNG: { city: "강릉", lat: 37.7519, lon: 128.8761 },
+  SOKCHO: { city: "속초", lat: 38.207, lon: 128.5918 },
+  YANGYANG: { city: "양양", lat: 38.0755, lon: 128.6191 },
+  PYEONGCHANG: { city: "평창", lat: 37.3705, lon: 128.3903 },
+  JEONJU: { city: "전주", lat: 35.8242, lon: 127.148 },
+  GYEONGJU: { city: "경주", lat: 35.8562, lon: 129.2247 },
+  TONGYEONG: { city: "통영", lat: 34.8544, lon: 128.4331 },
+  GEOJE: { city: "거제", lat: 34.8806, lon: 128.6211 },
+  NAMHAE: { city: "남해", lat: 34.8375, lon: 127.8925 },
+  SUNCHEON: { city: "순천", lat: 34.9506, lon: 127.4872 },
+  DAMYANG: { city: "담양", lat: 35.3212, lon: 126.988 },
+  GAPYEONG: { city: "가평", lat: 37.8315, lon: 127.5097 },
+  CHUNCHEON: { city: "춘천", lat: 37.8813, lon: 127.73 },
+  ANDONG: { city: "안동", lat: 36.5684, lon: 128.7294 },
+  MOKPO: { city: "목포", lat: 34.8118, lon: 126.3922 },
+  DANYANG: { city: "단양", lat: 36.9845, lon: 128.3654 },
+  TAEAN: { city: "태안", lat: 36.7455, lon: 126.2977 },
+  BOSEONG: { city: "보성", lat: 34.7714, lon: 127.08 },
+  BORYEONG: { city: "보령", lat: 36.3335, lon: 126.6128 },
+  ASAN: { city: "아산(온양온천)", lat: 36.7898, lon: 127.0019 },
+  BUYEO: { city: "부여", lat: 36.2755, lon: 126.9098 },
+  GANGHWA: { city: "강화", lat: 37.7465, lon: 126.4877 },
 };

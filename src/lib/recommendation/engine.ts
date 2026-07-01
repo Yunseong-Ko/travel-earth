@@ -10,9 +10,12 @@ import {
   type WeatherSnapshot,
 } from "@/lib/recommendation/providers";
 import {
+  buildGroundRationale,
   buildRationale,
   explainActivityScore,
   explainConvenienceScore,
+  explainGroundConvenience,
+  explainGroundPrice,
   explainPriceScore,
   explainTotalScore,
   explainWeatherScore,
@@ -32,6 +35,7 @@ import {
 } from "@/lib/recommendation/types";
 import {
   getDestinationActivities,
+  isGroundOnlyDestination,
   type OriginIata,
 } from "@/lib/recommendation/regions";
 
@@ -62,6 +66,24 @@ function resolveWeights(
     return { weather: 0.4, activity: 0.3, price: 0.2, convenience: 0.1 };
   }
   return { weather: 0.35, activity: 0.3, price: 0.25, convenience: 0.1 };
+}
+
+// 국내 근교(기차/버스) 목적지는 가격·편의 축이 없다 — 날씨/활동 비중만 유지한 채 재정규화한다.
+function toGroundWeights(weights: ScoreParts): ScoreParts {
+  const sum = weights.weather + weights.activity;
+  if (sum <= 0) {
+    return { weather: 1, activity: 0, price: 0, convenience: 0 };
+  }
+  return {
+    weather: weights.weather / sum,
+    activity: weights.activity / sum,
+    price: 0,
+    convenience: 0,
+  };
+}
+
+function buildGroundDirectionsUrl(destinationName: string): string {
+  return `https://map.naver.com/p/search/${encodeURIComponent(destinationName)}`;
 }
 
 function round1(value: number): number {
@@ -228,11 +250,118 @@ export async function runRecommendationEngine(
     }
   }
 
+  // 근교(기차/버스) 목적지는 출발공항과 무관하므로 출발지 루프 밖에서 1회만 채점한다.
+  // (안 그러면 서울/경기처럼 출발공항이 2개 이상인 경우 같은 목적지가 중복으로 나온다.)
+  const representativeOrigin = input.origin_iatas[0];
+  for (const destinationIata of destinations) {
+    if (!isGroundOnlyDestination(destinationIata)) {
+      continue;
+    }
+    for (const itinerary of itineraries) {
+      const weatherForecast =
+        weatherMap.get(weatherKey(destinationIata, itinerary)) ?? [];
+      const weatherScore = scoreWeather(weatherForecast, input.weather_preference);
+      const weatherSummary = summarizeForecast(weatherForecast);
+      const destinationActivities = getDestinationActivities(destinationIata);
+      const activityScore = scoreActivity(
+        input.activities,
+        destinationActivities,
+        weatherSummary,
+      );
+      const matchedActivities = input.activities.filter((activity) =>
+        destinationActivities.includes(activity),
+      );
+      const destinationName =
+        DESTINATION_LABELS[destinationIata] ?? destinationIata;
+      const weatherDaily = weatherForecast.map((day) => ({
+        date: day.date,
+        hi: day.temp_high_c,
+        lo: day.temp_low_c,
+        precip: day.precip_prob,
+      }));
+
+      const groundWeights = toGroundWeights(weights);
+      const totalScore = round1(
+        weatherScore * groundWeights.weather +
+          activityScore * groundWeights.activity,
+      );
+      const scoreParts: ScoreParts = {
+        weather: weatherScore,
+        activity: activityScore,
+        price: 0,
+        convenience: 0,
+      };
+
+      results.push({
+        rank: 0,
+        provider: "GROUND",
+        transport_mode: "GROUND",
+        origin_iata: representativeOrigin,
+        destination_iata: destinationIata,
+        destination_name: destinationName,
+        depart_date: itinerary.depart_date,
+        return_date: itinerary.return_date,
+        price_krw: 0,
+        price_is_live: false,
+        weather_score: weatherScore,
+        activity_score: activityScore,
+        price_score: 0,
+        convenience_score: 0,
+        total_score: totalScore,
+        matched_activities: matchedActivities,
+        weather_source: weatherForecast[0]?.source ?? "ESTIMATE",
+        weather_summary: weatherSummary,
+        weather_daily: weatherDaily,
+        score_explanations: {
+          weather: explainWeatherScore(
+            weatherScore,
+            weatherSummary,
+            input.weather_preference,
+            weatherForecast,
+          ),
+          activity: explainActivityScore(
+            activityScore,
+            input.activities,
+            destinationActivities,
+          ),
+          price: explainGroundPrice(),
+          convenience: explainGroundConvenience(),
+          total: explainTotalScore(totalScore, scoreParts, groundWeights),
+        },
+        rationale: buildGroundRationale(destinationName, weatherForecast),
+        flight_deeplink_url: buildGroundDirectionsUrl(destinationName),
+      });
+    }
+  }
+
   for (const originIata of input.origin_iatas) {
     for (const destinationIata of destinations) {
+      if (isGroundOnlyDestination(destinationIata)) {
+        continue;
+      }
       for (const itinerary of itineraries) {
         const weatherForecast =
           weatherMap.get(weatherKey(destinationIata, itinerary)) ?? [];
+        const weatherScore = scoreWeather(weatherForecast, input.weather_preference);
+        const weatherSummary = summarizeForecast(weatherForecast);
+        const destinationActivities = getDestinationActivities(destinationIata);
+        const activityScore = scoreActivity(
+          input.activities,
+          destinationActivities,
+          weatherSummary,
+        );
+        const matchedActivities = input.activities.filter((activity) =>
+          destinationActivities.includes(activity),
+        );
+        const destinationName =
+          DESTINATION_LABELS[destinationIata] ?? destinationIata;
+        const weatherDaily = weatherForecast.map((day) => ({
+          date: day.date,
+          hi: day.temp_high_c,
+          lo: day.temp_low_c,
+          precip: day.precip_prob,
+        }));
+
         const offer = await searchWithFallback(
           originIata,
           input.nonstop_only,
@@ -245,19 +374,8 @@ export async function runRecommendationEngine(
           continue;
         }
 
-        const weatherScore = scoreWeather(weatherForecast, input.weather_preference);
         const priceScore = scorePrice(offer.price_krw, input.budget_max_krw);
         const convenienceScore = scoreConvenience(offer, input.nonstop_only);
-        const weatherSummary = summarizeForecast(weatherForecast);
-        const destinationActivities = getDestinationActivities(destinationIata);
-        const activityScore = scoreActivity(
-          input.activities,
-          destinationActivities,
-          weatherSummary,
-        );
-        const matchedActivities = input.activities.filter((activity) =>
-          destinationActivities.includes(activity),
-        );
         const scoreParts: ScoreParts = {
           weather: weatherScore,
           activity: activityScore,
@@ -270,12 +388,11 @@ export async function runRecommendationEngine(
             priceScore * weights.price +
             convenienceScore * weights.convenience,
         );
-        const destinationName =
-          DESTINATION_LABELS[destinationIata] ?? destinationIata;
 
         results.push({
           rank: 0,
           provider: offer.provider,
+          transport_mode: "FLIGHT",
           origin_iata: originIata,
           destination_iata: destinationIata,
           destination_name: destinationName,
@@ -291,12 +408,7 @@ export async function runRecommendationEngine(
           matched_activities: matchedActivities,
           weather_source: weatherForecast[0]?.source ?? "ESTIMATE",
           weather_summary: weatherSummary,
-          weather_daily: weatherForecast.map((day) => ({
-            date: day.date,
-            hi: day.temp_high_c,
-            lo: day.temp_low_c,
-            precip: day.precip_prob,
-          })),
+          weather_daily: weatherDaily,
           score_explanations: {
             weather: explainWeatherScore(
               weatherScore,

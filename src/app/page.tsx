@@ -673,7 +673,9 @@ export default function Home() {
                       <span className="te-rank">#{item.rank}</span>
                       <span className="te-rl-name">{item.destination_name}</span>
                       <span className="te-rl-price">
-                        {formatKrw(item.price_krw)}
+                        {item.transport_mode === "GROUND"
+                          ? "KTX·버스"
+                          : formatKrw(item.price_krw)}
                       </span>
                       <span className="te-rl-total">{item.total_score}</span>
                     </button>
@@ -748,18 +750,33 @@ function DetailCard({ item }: { item: RecommendationItem }) {
           <span className="te-iata">{item.destination_iata}</span>
         </h3>
         <span className="te-provider">
-          {item.price_is_live ? item.provider : "추정가"}
+          {item.transport_mode === "GROUND"
+            ? "국내 근교"
+            : item.price_is_live
+              ? item.provider
+              : "추정가"}
         </span>
       </div>
       <p className="te-window">
-        {item.origin_iata} 출발 · {item.depart_date} → {item.return_date}
+        {item.transport_mode === "GROUND"
+          ? `${item.depart_date} → ${item.return_date}`
+          : `${item.origin_iata} 출발 · ${item.depart_date} → ${item.return_date}`}
       </p>
-      <p className="te-price">{formatKrw(item.price_krw)}</p>
-      {!item.price_is_live && (
-        <p className="te-honesty te-honesty--normal">
-          <span className="te-honesty-mark">⚠</span> 실제 항공권 API 미연동 ·
-          시세 추정치입니다 (예약 전 반드시 확인)
+      {item.transport_mode === "GROUND" ? (
+        <p className="te-honesty te-honesty--normal" style={{ marginTop: "0.1rem" }}>
+          <span className="te-honesty-mark">🚄</span> KTX·버스 등으로 이동 (항공권
+          없음)
         </p>
+      ) : (
+        <>
+          <p className="te-price">{formatKrw(item.price_krw)}</p>
+          {!item.price_is_live && (
+            <p className="te-honesty te-honesty--normal">
+              <span className="te-honesty-mark">⚠</span> 실제 항공권 API
+              미연동 · 시세 추정치입니다 (예약 전 반드시 확인)
+            </p>
+          )}
+        </>
       )}
 
       <p className="te-verdict">
@@ -820,10 +837,18 @@ function DetailCard({ item }: { item: RecommendationItem }) {
         <p className="te-explain">{item.score_explanations.weather}</p>
         <ScoreBar label="활동" value={item.activity_score} />
         <p className="te-explain">{item.score_explanations.activity}</p>
-        <ScoreBar label="가격" value={item.price_score} />
-        <p className="te-explain">{item.score_explanations.price}</p>
-        <ScoreBar label="편의" value={item.convenience_score} />
-        <p className="te-explain">{item.score_explanations.convenience}</p>
+        {item.transport_mode === "GROUND" ? (
+          <p className="te-explain">
+            {item.score_explanations.price} {item.score_explanations.convenience}
+          </p>
+        ) : (
+          <>
+            <ScoreBar label="가격" value={item.price_score} />
+            <p className="te-explain">{item.score_explanations.price}</p>
+            <ScoreBar label="편의" value={item.convenience_score} />
+            <p className="te-explain">{item.score_explanations.convenience}</p>
+          </>
+        )}
         <p className="te-total">{item.score_explanations.total}</p>
       </details>
 
@@ -833,7 +858,11 @@ function DetailCard({ item }: { item: RecommendationItem }) {
         rel="noopener noreferrer"
         className="te-cta"
       >
-        {item.price_is_live ? "항공권 보기 →" : "실제 요금 검색하기 →"}
+        {item.transport_mode === "GROUND"
+          ? "가는 법 찾기 →"
+          : item.price_is_live
+            ? "항공권 보기 →"
+            : "실제 요금 검색하기 →"}
       </a>
     </article>
   );
