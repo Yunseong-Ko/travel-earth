@@ -304,22 +304,26 @@ function isAmadeusConfigured(): boolean {
   return Boolean(process.env.AMADEUS_CLIENT_ID && process.env.AMADEUS_CLIENT_SECRET);
 }
 
+// yyMMdd (스카이스캐너 딥링크가 요구하는 날짜 형식)
+function toYyMmDd(dateIso: string): string {
+  const { year, month, day } = toDateParts(dateIso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(year % 100)}${pad(month)}${pad(day)}`;
+}
+
+// 스카이스캐너 실제 검색 결과 URL은 쿼리파라미터가 아니라 경로 형식이다:
+// /transport/flights/{출발}/{도착}/{yyMMdd}/{yyMMdd}/
+// (쿼리파라미터 형식은 404가 남 — Amadeus는 소비자용 검색 페이지가 없어 동일 링크로 대체)
 function buildSkyscannerFallbackDeeplink(input: FlightSearchInput): string {
-  const deeplink = new URL("https://www.skyscanner.net/transport/flights");
-  deeplink.searchParams.set("from", input.origin_iata);
-  deeplink.searchParams.set("to", input.destination_iata);
-  deeplink.searchParams.set("depart", input.depart_date);
-  deeplink.searchParams.set("return", input.return_date);
-  return deeplink.toString();
+  const origin = input.origin_iata.toLowerCase();
+  const destination = input.destination_iata.toLowerCase();
+  const depart = toYyMmDd(input.depart_date);
+  const ret = toYyMmDd(input.return_date);
+  return `https://www.skyscanner.net/transport/flights/${origin}/${destination}/${depart}/${ret}/`;
 }
 
 function buildAmadeusFallbackDeeplink(input: FlightSearchInput): string {
-  const deeplink = new URL("https://amadeus.com");
-  deeplink.searchParams.set("origin", input.origin_iata);
-  deeplink.searchParams.set("destination", input.destination_iata);
-  deeplink.searchParams.set("departDate", input.depart_date);
-  deeplink.searchParams.set("returnDate", input.return_date);
-  return deeplink.toString();
+  return buildSkyscannerFallbackDeeplink(input);
 }
 
 function parseSkyscannerOffer(
