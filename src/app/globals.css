@@ -1,26 +1,849 @@
-@import "tailwindcss";
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --ink: #0f1115;
+  --ink-2: #3a3f47;
+  --muted: #71777f;
+  --line: #e6e8eb;
+  --line-2: #f0f1f3;
+  --accent: #2563eb;
+  --accent-soft: #eef3ff;
+  --danger: #c2402c;
+  --radius: 14px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: var(--font-manrope), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.te-shell {
+  width: min(1320px, calc(100vw - 2.5rem));
+  margin: 1.6rem auto 3rem;
+  display: grid;
+  gap: 1rem;
+}
+
+/* ---------- hero ---------- */
+.te-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem 1.7rem;
+}
+.te-eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.te-hero h1 {
+  margin: 0.4rem 0 0.45rem;
+  font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.te-sub {
+  margin: 0;
+  max-width: 56ch;
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 0.9rem;
+}
+
+/* segmented mode toggle (mono) */
+.te-mode-toggle {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 10px;
+  background: var(--line-2);
+  border: 1px solid var(--line);
+}
+.te-mode-toggle button {
+  border: none;
+  background: transparent;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.83rem;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.te-mode-toggle button:hover {
+  color: var(--ink);
+}
+.te-mode-toggle button.is-active {
+  background: var(--ink);
+  color: #fff;
+}
+
+/* ---------- layout ---------- */
+.te-main {
+  display: grid;
+  grid-template-columns: 312px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+/* ---------- controls ---------- */
+.te-controls {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.15rem;
+  position: sticky;
+  top: 1rem;
+}
+.te-controls form {
+  display: grid;
+  gap: 0.95rem;
+}
+.te-field {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.te-field strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.te-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.te-controls select,
+.te-controls input[type="number"],
+.te-controls input[type="date"] {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+}
+.te-controls select:focus,
+.te-controls input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.te-controls input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.te-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.te-chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  padding: 0.36rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+.te-chip:hover {
+  border-color: var(--ink-2);
+  color: var(--ink);
+}
+.te-chip.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.te-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.28rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-style: normal;
+  font-size: 0.7rem;
+}
+
+.te-advanced summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.15rem 0;
+  list-style: none;
+}
+.te-advanced summary::-webkit-details-marker {
+  display: none;
+}
+.te-advanced summary::before {
+  content: "▸ ";
+}
+.te-advanced[open] summary::before {
+  content: "▾ ";
+}
+.te-advanced[open] {
+  display: grid;
+  gap: 0.6rem;
+}
+.te-advanced[open] > summary {
+  margin-bottom: 0.4rem;
+}
+
+.te-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.te-checkbox input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--ink);
+}
+
+.te-submit {
+  border: none;
+  border-radius: 10px;
+  padding: 0.78rem 1rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--ink);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.te-submit:hover {
+  opacity: 0.88;
+}
+.te-submit:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+.te-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ---------- stage ---------- */
+.te-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(290px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.te-social {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.1rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.te-social b {
+  color: var(--ink);
+}
+.te-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.te-live-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+  animation: te-pulse 1.8s ease-out infinite;
+}
+@keyframes te-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.te-mapwrap {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.te-map {
+  width: 100%;
+  height: clamp(420px, 60vh, 620px);
+  background: #eef0f2;
+}
+.te-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  padding: 0.6rem 0.85rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.te-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.te-legend .dot {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 999px;
+}
+.te-legend .dot.coral {
+  background: var(--accent);
+}
+.te-legend .dot.mint {
+  background: var(--ink);
+}
+.te-legend .dot.ghost {
+  background: #c2c7cd;
+}
+.te-legend-note {
+  margin-left: auto;
+  font-style: italic;
+}
+
+/* ---------- leaflet markers ---------- */
+.leaflet-container {
+  font: inherit;
+  background: #eef0f2;
+}
+.leaflet-div-icon.te-mk-wrap {
+  background: transparent;
+  border: none;
+}
+.te-mk--ctx {
+  position: relative;
+}
+.te-mk-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #b6bbc2;
+  border: 1.5px solid #fff;
+}
+.te-mk-label {
+  position: absolute;
+  left: 50%;
+  bottom: 130%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+  text-shadow: 0 1px 2px #fff, 0 0 2px #fff;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+/* 후보 점 라벨은 기본 숨김(겹침 방지) → hover 시만 표시. 결과/출발 라벨은 항상. */
+.te-mk--ctx:hover .te-mk-label,
+.te-mk--ctx:hover .te-mk-dot {
+  opacity: 1;
+}
+.te-mk--ctx:hover {
+  z-index: 600 !important;
+}
+.te-mk-label--origin {
+  opacity: 1;
+}
+.te-mk--res {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+}
+.te-mk-pin {
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  background: var(--ink);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(15, 17, 21, 0.28);
+  transition: transform 0.15s ease;
+}
+.te-mk--res.is-matched .te-mk-pin {
+  background: var(--accent);
+}
+.te-mk--res.is-sel .te-mk-pin {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 4px var(--accent-soft), 0 2px 8px rgba(37, 99, 235, 0.4);
+  border-color: var(--accent);
+}
+.te-mk--res:hover .te-mk-pin {
+  transform: scale(1.08);
+}
+.te-mk-name {
+  position: absolute;
+  left: 50%;
+  bottom: 116%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+  text-shadow: 0 1px 2px #fff, 0 0 2px #fff;
+  pointer-events: none;
+}
+.te-mk-price {
+  position: absolute;
+  left: 50%;
+  top: 112%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-2);
+  text-shadow: 0 1px 2px #fff, 0 0 2px #fff;
+  pointer-events: none;
+}
+.te-mk--origin {
+  position: relative;
+}
+.te-mk-origin-dot {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid var(--ink);
+  box-shadow: 0 1px 4px rgba(15, 17, 21, 0.3);
+}
+.te-mk-label--origin {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ---------- detail ---------- */
+.te-detail {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.1rem;
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+}
+.te-placeholder {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 0.88rem;
+}
+.te-empty {
+  display: grid;
+  gap: 0.5rem;
+}
+.te-empty-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.te-empty ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+.te-clear {
+  border: none;
+  background: none;
+  padding: 0;
+  margin-left: 0.4rem;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.te-clear:hover {
+  color: var(--ink);
+}
+.te-card {
+  display: grid;
+  gap: 0.4rem;
+}
+.te-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.te-card-head h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.te-iata {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.te-provider {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.22rem 0.46rem;
+  border-radius: 6px;
+  background: var(--line-2);
+  color: var(--ink-2);
+}
+.te-window {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.te-price {
+  margin: 0.05rem 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.te-matched {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* --- sharpened "왜 여기?" --- */
+.te-verdict {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  margin: 0.15rem 0 0;
+  padding: 0.7rem 0.8rem;
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.te-verdict-icon {
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.te-daystrip {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+}
+.te-day {
+  flex: 1 0 auto;
+  min-width: 2.7rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.12rem;
+  padding: 0.4rem 0.3rem;
+  background: var(--line-2);
+  border-radius: 9px;
+}
+.te-day-date {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.te-day-icon {
+  font-size: 1rem;
+  line-height: 1.1;
+}
+.te-day-temp {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.te-day--wide {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  width: 100%;
+  justify-items: stretch;
+  padding: 0.5rem 0.7rem;
+}
+.te-day--wide .te-day-date {
+  font-size: 0.78rem;
+}
+.te-day--wide .te-day-icon {
+  font-size: 1.15rem;
+}
+.te-day--wide .te-day-temp {
+  margin-left: auto;
+}
+
+.te-actpills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.te-actpill {
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.te-honesty {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.te-honesty-mark {
+  font-weight: 800;
+}
+.te-honesty--forecast {
+  color: #15803d;
+}
+.te-honesty--normal,
+.te-honesty--estimate {
+  color: #b45309;
+}
+
+.te-evidence {
+  border-top: 1px solid var(--line);
+  padding-top: 0.6rem;
+}
+.te-evidence > summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  list-style: none;
+}
+.te-evidence > summary::-webkit-details-marker {
+  display: none;
+}
+.te-evidence > summary::before {
+  content: "▸ ";
+  color: var(--muted);
+}
+.te-evidence[open] > summary::before {
+  content: "▾ ";
+}
+.te-scoreline {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr 2.2rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+.te-scorelabel {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.te-scoretrack {
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--line-2);
+  overflow: hidden;
+}
+.te-scoretrack > div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ink);
+}
+.te-scoreval {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: right;
+  color: var(--ink-2);
+}
+.te-explain {
+  margin: 0.02rem 0 0.15rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.te-total {
+  margin: 0.3rem 0 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 9px;
+  background: var(--line-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.te-rationale {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.te-cta {
+  justify-self: start;
+  margin-top: 0.1rem;
+  padding: 0.55rem 1rem;
+  border-radius: 9px;
+  font-weight: 700;
+  font-size: 0.83rem;
+  color: #fff;
+  background: var(--accent);
+}
+.te-cta:hover {
+  opacity: 0.9;
+}
+
+/* ---------- ranklist ---------- */
+.te-ranklist {
+  list-style: none;
+  margin: 0;
+  padding: 0.85rem 0 0;
+  display: grid;
+  gap: 0.3rem;
+  border-top: 1px solid var(--line);
+}
+.te-ranklist button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.8rem 1fr auto auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: all 0.13s ease;
+}
+.te-ranklist button:hover {
+  background: var(--line-2);
+}
+.te-ranklist button.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.te-rank {
+  font-weight: 800;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.te-ranklist button.is-active .te-rank {
+  color: var(--accent);
+}
+.te-rl-name {
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+.te-rl-price {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.te-rl-total {
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 1080px) {
+  .te-main {
+    grid-template-columns: 1fr;
+  }
+  .te-controls {
+    position: static;
+  }
+  .te-stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .te-shell {
+    width: calc(100vw - 1.6rem);
+    margin: 1rem auto 2rem;
+  }
+  .te-hero {
+    padding: 1.1rem 1.2rem;
+  }
+  .te-hero h1 {
+    font-size: 1.45rem;
+  }
+  .te-mode-toggle {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .te-mode-toggle button {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0.4rem;
+  }
+  .te-map {
+    height: clamp(320px, 56vh, 460px);
+  }
+  .te-social {
+    font-size: 0.78rem;
+  }
 }
