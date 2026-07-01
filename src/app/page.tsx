@@ -771,9 +771,13 @@ function DetailCard({ item }: { item: RecommendationItem }) {
         <>
           <p className="te-price">{formatKrw(item.price_krw)}</p>
           {!item.price_is_live && (
-            <p className="te-honesty te-honesty--normal">
-              <span className="te-honesty-mark">⚠</span> 실제 항공권 API
-              미연동 · 시세 추정치입니다 (예약 전 반드시 확인)
+            <p className="te-price-disclaimer">
+              <span className="te-price-disclaimer-mark">⚠ 추정 가격</span>
+              <span>
+                이 금액은 실제 항공권 가격이 아닙니다. 실제 가격은{" "}
+                <strong>항공권 보기</strong> 버튼을 눌러 Skyscanner에서
+                반드시 확인하세요.
+              </span>
             </p>
           )}
         </>

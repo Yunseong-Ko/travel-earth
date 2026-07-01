@@ -665,6 +665,25 @@ a {
   color: var(--accent);
 }
 
+/* 표시광고법 대응: 추정가는 실제 가격과 혼동되지 않도록 눈에 띄게 강조한다. */
+.te-price-disclaimer {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.1rem 0 0.2rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #7c2d12;
+}
+.te-price-disclaimer-mark {
+  font-weight: 800;
+  font-size: 0.86rem;
+  color: #9a3412;
+}
+
 /* --- sharpened "왜 여기?" --- */
 .te-verdict {
   display: flex;
