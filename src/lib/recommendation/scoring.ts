@@ -108,6 +108,26 @@ function activityWeatherFit(
   return clamp(100 - tempPenalty - precipPenalty - windPenalty, 0, 100);
 }
 
+// 비 오는 날에도 되는(오히려 어울리는) 활동. 우천 적응 랭킹에 사용 —
+// 사람들은 비가 오면 맑은 곳을 찾아 더 멀리 가는 게 아니라 활동을 실내형으로 바꾼다.
+export const RAINY_DAY_ACTIVITIES: ActivityTag[] = [
+  "HOTSPRING",
+  "FOOD",
+  "SHOPPING",
+  "CULTURE",
+];
+
+export function explainRainAdaptiveScore(
+  score: number,
+  matched: ActivityTag[],
+): string {
+  if (matched.length === 0) {
+    return `비 예보 구간이고 실내 대안 활동이 없어 우천 적합 ${score.toFixed(1)}점입니다.`;
+  }
+  const labels = matched.map((a) => ACTIVITY_LABELS[a]).join(", ");
+  return `비 예보 기준, ${labels} 같은 우천 적합 활동이 가능해 ${score.toFixed(1)}점입니다.`;
+}
+
 export function scoreActivity(
   requested: ActivityTag[],
   destinationTags: ActivityTag[],

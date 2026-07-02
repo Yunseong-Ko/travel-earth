@@ -774,11 +774,24 @@ function DetailCard({ item }: { item: RecommendationItem }) {
   const badge = SOURCE_BADGE[item.weather_source];
 
   // 한 줄 판정 (왜 여기?)
-  const verdict: string[] = [
-    `${month}월 ${phase}, ${isNormal ? "평년 " : ""}${avgTemp}°C ${sky.label}.`,
-  ];
-  if (matchedLabels.length > 0) {
-    verdict.push(`${matchedLabels.join("·")} 다 돼.`);
+  const verdict: string[] = [];
+  if (item.rain_adaptive) {
+    // 우천 적응: "비 피해 딴 데 가라"가 아니라 "이 날씨엔 이걸 해"로 프레임 전환.
+    verdict.push(
+      `${month}월 ${phase}, 비 예보(강수 ${avgPrecip}%)${isNormal ? " · 평년 기준" : ""}.`,
+    );
+    if (matchedLabels.length > 0) {
+      verdict.push(`그래서 ${matchedLabels.join("·")}가 딱이에요.`);
+    } else {
+      verdict.push("실내 위주로 잡는 걸 추천해요.");
+    }
+  } else {
+    verdict.push(
+      `${month}월 ${phase}, ${isNormal ? "평년 " : ""}${avgTemp}°C ${sky.label}.`,
+    );
+    if (matchedLabels.length > 0) {
+      verdict.push(`${matchedLabels.join("·")} 다 돼.`);
+    }
   }
   verdict.push(
     item.rank === 1

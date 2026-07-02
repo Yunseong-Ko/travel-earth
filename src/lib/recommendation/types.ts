@@ -111,6 +111,8 @@ export type RecommendationItem = {
   convenience_score: number;
   total_score: number;
   matched_activities: ActivityTag[];
+  // 비 예보 + 활동 미선택 → 실내형 활동 기준으로 랭킹이 전환된 결과인지 여부.
+  rain_adaptive: boolean;
   weather_source: "FORECAST" | "NORMAL" | "ESTIMATE";
   weather_summary: { avgTemp: number; avgPrecip: number; avgWind: number };
   weather_daily: Array<{ date: string; hi: number; lo: number; precip: number }>;

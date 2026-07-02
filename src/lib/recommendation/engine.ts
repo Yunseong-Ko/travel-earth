@@ -10,6 +10,7 @@ import {
   type WeatherSnapshot,
 } from "@/lib/recommendation/providers";
 import {
+  RAINY_DAY_ACTIVITIES,
   buildGroundRationale,
   buildRationale,
   explainActivityScore,
@@ -17,6 +18,7 @@ import {
   explainGroundConvenience,
   explainGroundPrice,
   explainPriceScore,
+  explainRainAdaptiveScore,
   explainTotalScore,
   explainWeatherScore,
   scoreActivity,
@@ -215,7 +217,28 @@ export async function runRecommendationEngine(
           ).length,
       )
     : input.candidate_destinations;
-  const destinations = rankedCandidates.slice(0, maxDestinations);
+  // 근교는 항공 검색이 없어 비용이 싸므로 캡을 분리한다 — 그렇지 않으면 목록 후순위의
+  // 온천(아산)·문화(부여) 같은 우천 대안이 채점 전에 잘려나가 우천 적응이 무력화된다.
+  const maxGroundDestinations = readLimitFromEnv(
+    "RECO_MAX_GROUND_DESTINATIONS",
+    22,
+    5,
+    40,
+  );
+  const groundCandidates = rankedCandidates
+    .filter((code) => isGroundOnlyDestination(code))
+    .slice(0, maxGroundDestinations);
+  const flightCandidates = rankedCandidates
+    .filter((code) => !isGroundOnlyDestination(code))
+    .slice(0, maxDestinations);
+  const destinations = [...groundCandidates, ...flightCandidates];
+  // 비 예보 + 활동 미선택이면 "이 날씨에 맞는 곳"으로 랭킹 목표를 전환하는 강수확률 문턱.
+  const rainPrecipThreshold = readLimitFromEnv(
+    "RECO_RAIN_ADAPTIVE_PRECIP",
+    55,
+    30,
+    90,
+  );
   const results: RecommendationItem[] = [];
 
   // 날씨는 출발지와 무관(도시+일정에만 의존)하므로 유니크 조합만 병렬 프리페치한다.
@@ -263,12 +286,19 @@ export async function runRecommendationEngine(
       const weatherScore = scoreWeather(weatherForecast, input.weather_preference);
       const weatherSummary = summarizeForecast(weatherForecast);
       const destinationActivities = getDestinationActivities(destinationIata);
+      // 우천 적응: 활동 미선택 + 비 예보면 실내형 활동 세트로 채점 목표를 바꾼다.
+      const rainAdaptive =
+        input.activities.length === 0 &&
+        weatherSummary.avgPrecip >= rainPrecipThreshold;
+      const effectiveActivities = rainAdaptive
+        ? RAINY_DAY_ACTIVITIES
+        : input.activities;
       const activityScore = scoreActivity(
-        input.activities,
+        effectiveActivities,
         destinationActivities,
         weatherSummary,
       );
-      const matchedActivities = input.activities.filter((activity) =>
+      const matchedActivities = effectiveActivities.filter((activity) =>
         destinationActivities.includes(activity),
       );
       const destinationName =
@@ -280,7 +310,9 @@ export async function runRecommendationEngine(
         precip: day.precip_prob,
       }));
 
-      const groundWeights = toGroundWeights(weights);
+      const groundWeights = toGroundWeights(
+        rainAdaptive ? resolveWeights(input.mode, true) : weights,
+      );
       const totalScore = round1(
         weatherScore * groundWeights.weather +
           activityScore * groundWeights.activity,
@@ -309,6 +341,7 @@ export async function runRecommendationEngine(
         convenience_score: 0,
         total_score: totalScore,
         matched_activities: matchedActivities,
+        rain_adaptive: rainAdaptive,
         weather_source: weatherForecast[0]?.source ?? "ESTIMATE",
         weather_summary: weatherSummary,
         weather_daily: weatherDaily,
@@ -319,11 +352,13 @@ export async function runRecommendationEngine(
             input.weather_preference,
             weatherForecast,
           ),
-          activity: explainActivityScore(
-            activityScore,
-            input.activities,
-            destinationActivities,
-          ),
+          activity: rainAdaptive
+            ? explainRainAdaptiveScore(activityScore, matchedActivities)
+            : explainActivityScore(
+                activityScore,
+                effectiveActivities,
+                destinationActivities,
+              ),
           price: explainGroundPrice(),
           convenience: explainGroundConvenience(),
           total: explainTotalScore(totalScore, scoreParts, groundWeights),
@@ -345,14 +380,24 @@ export async function runRecommendationEngine(
         const weatherScore = scoreWeather(weatherForecast, input.weather_preference);
         const weatherSummary = summarizeForecast(weatherForecast);
         const destinationActivities = getDestinationActivities(destinationIata);
+        // 우천 적응: 활동 미선택 + 비 예보면 실내형 활동 세트로 채점 목표를 바꾼다.
+        const rainAdaptive =
+          input.activities.length === 0 &&
+          weatherSummary.avgPrecip >= rainPrecipThreshold;
+        const effectiveActivities = rainAdaptive
+          ? RAINY_DAY_ACTIVITIES
+          : input.activities;
         const activityScore = scoreActivity(
-          input.activities,
+          effectiveActivities,
           destinationActivities,
           weatherSummary,
         );
-        const matchedActivities = input.activities.filter((activity) =>
+        const matchedActivities = effectiveActivities.filter((activity) =>
           destinationActivities.includes(activity),
         );
+        const itemWeights = rainAdaptive
+          ? resolveWeights(input.mode, true)
+          : weights;
         const destinationName =
           DESTINATION_LABELS[destinationIata] ?? destinationIata;
         const weatherDaily = weatherForecast.map((day) => ({
@@ -383,10 +428,10 @@ export async function runRecommendationEngine(
           convenience: convenienceScore,
         };
         const totalScore = round1(
-          weatherScore * weights.weather +
-            activityScore * weights.activity +
-            priceScore * weights.price +
-            convenienceScore * weights.convenience,
+          weatherScore * itemWeights.weather +
+            activityScore * itemWeights.activity +
+            priceScore * itemWeights.price +
+            convenienceScore * itemWeights.convenience,
         );
 
         results.push({
@@ -406,6 +451,7 @@ export async function runRecommendationEngine(
           convenience_score: convenienceScore,
           total_score: totalScore,
           matched_activities: matchedActivities,
+          rain_adaptive: rainAdaptive,
           weather_source: weatherForecast[0]?.source ?? "ESTIMATE",
           weather_summary: weatherSummary,
           weather_daily: weatherDaily,
@@ -416,11 +462,13 @@ export async function runRecommendationEngine(
               input.weather_preference,
               weatherForecast,
             ),
-            activity: explainActivityScore(
-              activityScore,
-              input.activities,
-              destinationActivities,
-            ),
+            activity: rainAdaptive
+              ? explainRainAdaptiveScore(activityScore, matchedActivities)
+              : explainActivityScore(
+                  activityScore,
+                  effectiveActivities,
+                  destinationActivities,
+                ),
             price: explainPriceScore(
               priceScore,
               offer.price_krw,
@@ -431,7 +479,7 @@ export async function runRecommendationEngine(
               offer,
               input.nonstop_only,
             ),
-            total: explainTotalScore(totalScore, scoreParts, weights),
+            total: explainTotalScore(totalScore, scoreParts, itemWeights),
           },
           rationale: buildRationale(destinationName, offer, weatherForecast),
           flight_deeplink_url: offer.deeplink_url,
