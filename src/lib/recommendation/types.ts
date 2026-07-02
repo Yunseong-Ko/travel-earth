@@ -96,7 +96,7 @@ export type RecommendationRequest = {
 export type RecommendationItem = {
   rank: number;
   provider: ProviderCode;
-  // FLIGHT: 항공권 기반(공항). GROUND: 국내 근교, 기차/버스로 이동(항공권 축 없음).
+  // FLIGHT: 항공권 기반(공항). GROUND: 국내 근교, 자차/대중교통 이동(항공권 축 없음).
   transport_mode: "FLIGHT" | "GROUND";
   origin_iata: OriginIata;
   destination_iata: string;

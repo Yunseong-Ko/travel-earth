@@ -254,9 +254,9 @@ export function buildRationale(
   )} 운임이며 총 비행시간 약 ${durationHour}시간입니다.`;
 }
 
-// 국내 근교(기차/버스) 목적지는 항공권이 없어 별도 문구를 쓴다.
+// 국내 근교 목적지는 항공권이 없어 별도 문구를 쓴다. 이동수단은 자차/대중교통 중립으로 표현.
 export function explainGroundPrice(): string {
-  return "국내 근교 목적지라 항공권 가격 축은 적용하지 않습니다 (KTX·버스 등으로 이동).";
+  return "국내 근교 목적지라 항공권 가격 축은 적용하지 않습니다 (자차·KTX·버스로 이동).";
 }
 
 export function explainGroundConvenience(): string {
@@ -268,5 +268,5 @@ export function buildGroundRationale(
   forecast: WeatherSnapshot[],
 ): string {
   const summary = summarizeForecast(forecast);
-  return `${destinationName} 평균 기온 ${summary.avgTemp}°C, 강수확률 ${summary.avgPrecip}% 구간입니다. 국내 근교라 KTX·버스 등으로 이동합니다.`;
+  return `${destinationName} 평균 기온 ${summary.avgTemp}°C, 강수확률 ${summary.avgPrecip}% 구간입니다. 자차나 KTX·버스로 다녀오는 국내 근교입니다.`;
 }

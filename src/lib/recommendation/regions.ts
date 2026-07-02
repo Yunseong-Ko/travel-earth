@@ -11,7 +11,8 @@ export const ORIGIN_REGION_OPTIONS = [
   },
 ] as const;
 
-// 기차/버스로 가는 국내 근교 목적지 코드(공항 IATA 아님 — 항공권 축 없이 날씨+활동만으로 평가됨).
+// 국내 근교 목적지 코드(공항 IATA 아님 — 항공권 축 없이 날씨+활동만으로 평가됨).
+// 이동수단은 자가용이 지배적(국내여행의 85.2%, 국민여행조사 2024)이므로 특정 교통수단으로 프레이밍하지 않는다.
 export const GROUND_DESTINATION_CODES = [
   "GANGNEUNG",
   "SOKCHO",
@@ -51,7 +52,7 @@ export const DESTINATION_REGION_OPTIONS = [
   },
   {
     id: "KOREA_GROUND",
-    label: "국내 근교(기차·버스)",
+    label: "국내 근교(주말·당일)",
     airports: [...GROUND_DESTINATION_CODES],
   },
   {

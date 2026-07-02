@@ -68,7 +68,7 @@ function resolveWeights(
   return { weather: 0.35, activity: 0.3, price: 0.25, convenience: 0.1 };
 }
 
-// 국내 근교(기차/버스) 목적지는 가격·편의 축이 없다 — 날씨/활동 비중만 유지한 채 재정규화한다.
+// 국내 근교 목적지는 가격·편의 축이 없다 — 날씨/활동 비중만 유지한 채 재정규화한다.
 function toGroundWeights(weights: ScoreParts): ScoreParts {
   const sum = weights.weather + weights.activity;
   if (sum <= 0) {
@@ -250,7 +250,7 @@ export async function runRecommendationEngine(
     }
   }
 
-  // 근교(기차/버스) 목적지는 출발공항과 무관하므로 출발지 루프 밖에서 1회만 채점한다.
+  // 근교 목적지는 출발공항과 무관하므로 출발지 루프 밖에서 1회만 채점한다.
   // (안 그러면 서울/경기처럼 출발공항이 2개 이상인 경우 같은 목적지가 중복으로 나온다.)
   const representativeOrigin = input.origin_iatas[0];
   for (const destinationIata of destinations) {
@@ -440,12 +440,22 @@ export async function runRecommendationEngine(
     }
   }
 
+  // 같은 도시가 일정만 바꿔 Top5를 도배하지 않도록 도시별 최고 점수 1건만 남긴다.
+  // (탐색 제품에서 Top5의 가치는 "다양한 후보"이지 같은 도시의 날짜 변형이 아니다.)
+  const seenDestinations = new Set<string>();
   const items = results
     .sort((left, right) => {
       if (right.total_score !== left.total_score) {
         return right.total_score - left.total_score;
       }
       return left.price_krw - right.price_krw;
+    })
+    .filter((item) => {
+      if (seenDestinations.has(item.destination_iata)) {
+        return false;
+      }
+      seenDestinations.add(item.destination_iata);
+      return true;
     })
     .slice(0, 5)
     .map((item, index) => ({ ...item, rank: index + 1 }));

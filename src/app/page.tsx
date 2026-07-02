@@ -63,6 +63,17 @@ function isoAfterDays(days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+// 다가오는 토·일. 오늘이 토요일이면 오늘부터, 일요일이면 다음 주말.
+// 7일 이내이므로 날씨는 항상 실제 예보([예보])로 뜬다.
+function upcomingWeekend(): { sat: string; sun: string } {
+  const date = new Date();
+  const daysUntilSaturday = (6 - date.getDay() + 7) % 7;
+  date.setDate(date.getDate() + daysUntilSaturday);
+  const sat = date.toISOString().slice(0, 10);
+  date.setDate(date.getDate() + 1);
+  return { sat, sun: date.toISOString().slice(0, 10) };
+}
+
 function scoreWidth(score: number): string {
   return `${Math.max(0, Math.min(100, score))}%`;
 }
@@ -232,10 +243,32 @@ export default function Home() {
     setStep((s) => Math.max(0, s - 1));
   }
 
+  // 원탭 주말 모드: 이번 토~일 + 국내 근교. 마법사를 건너뛰고 바로 검색한다.
+  function applyWeekendPreset() {
+    const { sat, sun } = upcomingWeekend();
+    const next: FormState = {
+      ...form,
+      destination_regions: ["KOREA_GROUND"],
+      earliest_departure: sat,
+      latest_return: sun,
+      min_nights: "1",
+      max_nights: "1",
+    };
+    setForm(next);
+    setShowIntro(false);
+    setStep(LAST_STEP);
+    void runSearchWith(next);
+  }
+
   async function runSearch() {
+    return runSearchWith(form);
+  }
+
+  // 프리셋(주말 모드 등)은 setState 직후 상태 반영을 기다릴 수 없으므로 폼을 명시적으로 받는다.
+  async function runSearchWith(f: FormState) {
     setError(null);
 
-    if (form.destination_regions.length === 0) {
+    if (f.destination_regions.length === 0) {
       setError("탐색할 도착 지역을 최소 1개 선택해 주세요.");
       setStep(1);
       return;
@@ -243,22 +276,24 @@ export default function Home() {
 
     setLoading(true);
     const payload = {
-      origin_region: form.origin_region,
-      candidate_destinations: candidateDestinations,
-      earliest_departure: form.earliest_departure,
-      latest_return: form.latest_return,
-      min_nights: Number(form.min_nights),
-      max_nights: Number(form.max_nights),
-      budget_max_krw: form.budget_max_krw,
+      origin_region: f.origin_region,
+      candidate_destinations: getDestinationAirportsByRegions(
+        f.destination_regions as DestinationRegionCode[],
+      ),
+      earliest_departure: f.earliest_departure,
+      latest_return: f.latest_return,
+      min_nights: Number(f.min_nights),
+      max_nights: Number(f.max_nights),
+      budget_max_krw: f.budget_max_krw,
       weather_preference: {
-        temp_min_c: Number(form.temp_min_c),
-        temp_max_c: Number(form.temp_max_c),
-        max_precip_prob: Number(form.max_precip_prob),
-        max_wind_mps: Number(form.max_wind_mps),
+        temp_min_c: Number(f.temp_min_c),
+        temp_max_c: Number(f.temp_max_c),
+        max_precip_prob: Number(f.max_precip_prob),
+        max_wind_mps: Number(f.max_wind_mps),
       },
       activities,
       mode,
-      nonstop_only: form.nonstop_only,
+      nonstop_only: f.nonstop_only,
     };
 
     try {
@@ -328,13 +363,22 @@ export default function Home() {
           <div className="te-intro-globe">
             <GlobeAirportPicker markers={heroMarkers} showLabels={false} />
           </div>
-          <button
-            type="button"
-            className="te-submit te-intro-cta"
-            onClick={() => setShowIntro(false)}
-          >
-            지도에서 찾기 시작하기 →
-          </button>
+          <div className="te-intro-actions">
+            <button
+              type="button"
+              className="te-submit te-intro-cta te-intro-cta--weekend"
+              onClick={applyWeekendPreset}
+            >
+              이번 주말 어디 가지? →
+            </button>
+            <button
+              type="button"
+              className="te-submit te-intro-cta te-intro-cta--secondary"
+              onClick={() => setShowIntro(false)}
+            >
+              조건 직접 정하기
+            </button>
+          </div>
         </section>
       ) : (
         <main className="te-main">
@@ -674,7 +718,7 @@ export default function Home() {
                       <span className="te-rl-name">{item.destination_name}</span>
                       <span className="te-rl-price">
                         {item.transport_mode === "GROUND"
-                          ? "KTX·버스"
+                          ? "근교"
                           : formatKrw(item.price_krw)}
                       </span>
                       <span className="te-rl-total">{item.total_score}</span>
@@ -764,8 +808,8 @@ function DetailCard({ item }: { item: RecommendationItem }) {
       </p>
       {item.transport_mode === "GROUND" ? (
         <p className="te-honesty te-honesty--normal" style={{ marginTop: "0.1rem" }}>
-          <span className="te-honesty-mark">🚄</span> KTX·버스 등으로 이동 (항공권
-          없음)
+          <span className="te-honesty-mark">🚗</span> 자차·KTX·버스로 다녀오는 근교
+          (항공권 불필요)
         </p>
       ) : (
         <>

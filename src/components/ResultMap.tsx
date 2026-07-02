@@ -133,7 +133,7 @@ export default function ResultMap({
           .join(" ");
         const priceLabel =
           item.transport_mode === "GROUND"
-            ? "KTX·버스"
+            ? "근교"
             : krwShort(item.price_krw);
         const icon = L.divIcon({
           className: "te-mk-wrap",

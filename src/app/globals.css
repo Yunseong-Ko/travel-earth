@@ -127,10 +127,29 @@ a {
 .globe-canvas:active {
   cursor: grabbing;
 }
+.te-intro-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
 .te-intro-cta {
   width: auto;
   padding: 0.9rem 1.6rem;
   font-size: 1rem;
+}
+.te-intro-cta--weekend {
+  background: var(--accent);
+}
+.te-intro-cta--secondary {
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.te-intro-cta--secondary:hover {
+  color: var(--ink);
+  border-color: var(--ink-2);
+  opacity: 1;
 }
 
 /* ---------- layout ---------- */
