@@ -11,6 +11,7 @@ import {
   AIRPORT_GEO,
   ALL_DESTINATION_AIRPORTS,
   DESTINATION_REGION_OPTIONS,
+  DESTINATION_TAGLINES,
   ORIGIN_REGION_MAP,
   ORIGIN_REGION_OPTIONS,
   getDestinationAirportsByRegions,
@@ -48,14 +49,22 @@ const MODE_OPTIONS: Array<{ id: RecommendationMode; label: string; hint: string 
 ];
 
 const STEP_TITLES = [
-  "출발 지역",
-  "탐색 범위",
-  "하고 싶은 활동",
-  "예산 상한",
-  "여행 기간",
-  "날씨 선호",
+  "어디서 출발해요?",
+  "어디까지 가볼까요?",
+  "뭐 하고 싶어요?",
+  "예산은 얼마까지?",
+  "언제 떠나요?",
+  "어떤 날씨가 좋아요?",
 ] as const;
 const LAST_STEP = STEP_TITLES.length - 1;
+
+// 검색 대기 중 돌아가는 문구 — 기다림도 브랜드 톤의 일부.
+const LOADING_MESSAGES = [
+  "하늘 먼저 살펴보는 중 ☁️",
+  "항공권 뒤적이는 중 ✈️",
+  "지도에 핀 꽂는 중 📍",
+  "날씨랑 협상하는 중 🌤️",
+] as const;
 
 function isoAfterDays(days: number): string {
   const date = new Date();
@@ -102,9 +111,22 @@ export default function Home() {
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const [viewers, setViewers] = useState(0);
   const [searchCount, setSearchCount] = useState<number | null>(null);
   const sessionIdRef = useRef<string>("");
+
+  // 검색 중 로딩 문구 로테이션 (클릭 후에만 돌므로 SSR 불일치 없음)
+  useEffect(() => {
+    if (!loading) {
+      return;
+    }
+    const id = setInterval(
+      () => setLoadingMsgIdx((i) => i + 1),
+      1300,
+    );
+    return () => clearInterval(id);
+  }, [loading]);
 
   // 라이브 presence: 12초마다 하트비트 → "지금 보는 중 N명"
   useEffect(() => {
@@ -334,11 +356,11 @@ export default function Home() {
       <header className="te-hero">
         <div>
           <p className="te-eyebrow">Travel EARTH</p>
-          <h1>국내부터 가까운 나라까지, 지도에서 떠날 곳을 찾아요</h1>
+          <h1>어디 갈지 고민은 그만, 지도가 골라줄게요</h1>
           <p className="te-sub">
-            날짜·예산·하고 싶은 활동을 정하면, 국내와 일본·대만·홍콩처럼 가까운
-            곳부터 지도에 핀으로 떠오릅니다. 핀을 누르면 항공권·날씨·활동
-            근거를 보여줘요.
+            날짜랑 예산, 하고 싶은 것만 알려주세요. 국내부터 일본·대만·홍콩까지,
+            날씨 좋고 가성비 맞는 곳을 지도에 핀으로 띄워드릴게요 — 왜 거기인지
+            근거도 같이요.
           </p>
         </div>
         {!showIntro && (
@@ -421,7 +443,7 @@ export default function Home() {
 
             {step === 1 && (
               <div className="te-field">
-                <span>어디까지 둘러볼까요?</span>
+                <span>여러 개 골라도 돼요</span>
                 <div className="te-chips">
                   {DESTINATION_REGION_OPTIONS.map((region) => {
                     const on = form.destination_regions.includes(region.id);
@@ -443,7 +465,7 @@ export default function Home() {
             {step === 2 && (
               <div className="te-field">
                 <span>
-                  하고 싶은 활동을 골라보세요 (안 골라도 돼요){" "}
+                  끌리는 것만 콕콕 — 안 골라도 돼요{" "}
                   {activities.length > 0 && (
                     <>
                       <em className="te-count">{activities.length}</em>
@@ -637,9 +659,9 @@ export default function Home() {
               onClick={goNext}
             >
               {loading
-                ? "지도 그리는 중…"
+                ? LOADING_MESSAGES[loadingMsgIdx % LOADING_MESSAGES.length]
                 : step === LAST_STEP
-                  ? "지도에서 찾기"
+                  ? "떠날 곳 찾기 →"
                   : "다음 →"}
             </button>
           </div>
@@ -648,11 +670,11 @@ export default function Home() {
         <section className="te-stage">
           <div className="te-social">
             <span className="te-live">
-              <i className="te-live-dot" /> 지금 보는 중 <b>{viewers}</b>명
+              <i className="te-live-dot" /> 지금 <b>{viewers}</b>명이 같이 보는 중
             </span>
             {searchCount !== null && (
               <span>
-                이 추천 검색한 사람 <b>{searchCount}</b>명
+                나랑 같은 조건으로 찾아본 사람 <b>{searchCount}</b>명
               </span>
             )}
           </div>
@@ -683,23 +705,23 @@ export default function Home() {
               <DetailCard item={selectedItem} />
             ) : result && result.items.length === 0 ? (
               <div className="te-empty">
-                <p className="te-empty-title">조건에 맞는 항공편을 못 찾았어요</p>
+                <p className="te-empty-title">이번 조건으론 못 찾았어요 🥲</p>
                 <ul>
-                  <li>예산 상한을 올려보세요</li>
-                  <li>‘무경유만’을 꺼보세요</li>
-                  <li>탐색 범위(지역)를 넓혀보세요</li>
+                  <li>예산을 조금만 올려보면 어때요?</li>
+                  <li>‘무경유만’을 끄면 선택지가 확 늘어요</li>
+                  <li>탐색 범위를 한 곳만 더 열어봐요</li>
                 </ul>
               </div>
             ) : result ? (
               <p className="te-placeholder">
                 {selectedCode
-                  ? "이 도시는 이번 점수권(Top) 밖이에요. 다른 핀을 눌러보세요."
-                  : "지도의 핀을 눌러 상세 근거를 확인하세요."}
+                  ? "여긴 이번 Top 5 밖이에요. 파란 핀을 눌러보세요!"
+                  : "지도의 핀을 누르면 왜 거기인지 알려줄게요."}
               </p>
             ) : (
               <p className="te-placeholder">
-                왼쪽 조건을 정하고 <b>지도에서 찾기</b>를 누르면 갈 수 있는 곳이
-                핀으로 떠올라요.
+                왼쪽에서 조건만 정해주세요. 갈 수 있는 곳을 지도에 다
+                띄워드릴게요.
               </p>
             )}
 
@@ -814,6 +836,11 @@ function DetailCard({ item }: { item: RecommendationItem }) {
               : "추정가"}
         </span>
       </div>
+      {DESTINATION_TAGLINES[item.destination_iata] && (
+        <p className="te-tagline">
+          “{DESTINATION_TAGLINES[item.destination_iata]}”
+        </p>
+      )}
       <p className="te-window">
         {item.transport_mode === "GROUND"
           ? `${item.depart_date} → ${item.return_date}`

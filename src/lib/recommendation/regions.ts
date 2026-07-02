@@ -193,6 +193,48 @@ export function getDestinationActivities(
   return DESTINATION_ACTIVITIES[destinationIata] ?? ["CITY"];
 }
 
+// 목적지 한 줄 태그라인 — 카드에 개성을 입히는 카피. 과장 없이 짧고 구체적으로.
+export const DESTINATION_TAGLINES: Record<string, string> = {
+  CJU: "설명이 필요 없는 그 섬",
+  CJJ: "느긋한 충청 감성",
+  TAE: "더위도 맛도 화끈한 도시",
+  KWJ: "예향의 밥상은 못 참지",
+  RSU: "밤바다는 들어봤잖아요",
+  USN: "바다 옆 반전 매력",
+  NRT: "갈 때마다 새로운 도시",
+  KIX: "먹다가 하루 다 가는 곳",
+  FUK: "퇴근하고 가는 일본",
+  TPE: "야시장 냄새가 부르는 곳",
+  HKG: "야경 하나로 본전 뽑기",
+  BKK: "혼돈과 맛의 수도",
+  SIN: "비 와도 할 게 많은 도시",
+  CEB: "바다색이 반칙인 곳",
+  DAD: "국민 휴양지엔 이유가 있다",
+  DPS: "서퍼들의 성지",
+  GANGNEUNG: "커피 한 잔에 바다 한 스푼",
+  SOKCHO: "설악과 바다를 한 번에",
+  YANGYANG: "서울에서 제일 가까운 서핑",
+  PYEONGCHANG: "한여름에도 서늘한 고원",
+  JEONJU: "한 끼도 허투루 못 먹는 도시",
+  GYEONGJU: "도시 전체가 박물관",
+  TONGYEONG: "바다 맛의 본고장",
+  GEOJE: "몽돌 구르는 소리 들으러",
+  NAMHAE: "느리게 걷고 싶은 섬",
+  SUNCHEON: "갈대밭 노을 맛집",
+  DAMYANG: "대나무 숲 산책 한 스푼",
+  GAPYEONG: "서울 옆 초록 휴가",
+  CHUNCHEON: "닭갈비만으로도 갈 이유",
+  ANDONG: "고즈넉함이 필요할 때",
+  MOKPO: "항구의 맛과 노을",
+  DANYANG: "굽이굽이 강 따라",
+  TAEAN: "서해 노을 원픽",
+  BOSEONG: "초록 물결 녹차밭",
+  BORYEONG: "머드 아니어도 좋은 바다",
+  ASAN: "비 오면 여기지, 온천",
+  BUYEO: "백제의 조용한 위엄",
+  GANGHWA: "서울에서 제일 가까운 섬 여행",
+};
+
 export const AIRPORT_GEO: Record<
   string,
   { city: string; lat: number; lon: number }

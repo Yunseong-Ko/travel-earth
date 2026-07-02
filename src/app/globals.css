@@ -666,6 +666,13 @@ a {
   background: var(--line-2);
   color: var(--ink-2);
 }
+.te-tagline {
+  margin: -0.1rem 0 0.05rem;
+  font-family: var(--font-fraunces), serif;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--accent);
+}
 .te-window {
   margin: 0;
   font-size: 0.82rem;
