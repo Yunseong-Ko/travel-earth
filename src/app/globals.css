@@ -710,24 +710,35 @@ a {
   color: #9a3412;
 }
 
-/* --- sharpened "왜 여기?" --- */
+/* --- 구름이가 말해주는 "왜 여기?" --- */
 .te-verdict {
   display: flex;
-  gap: 0.55rem;
+  gap: 0.6rem;
   align-items: flex-start;
   margin: 0.15rem 0 0;
-  padding: 0.7rem 0.8rem;
+}
+.te-verdict-bubble {
+  position: relative;
+  margin: 0;
+  padding: 0.7rem 0.85rem;
   background: var(--accent-soft);
-  border-left: 3px solid var(--accent);
-  border-radius: 0 10px 10px 0;
+  border-radius: 12px;
   font-size: 0.92rem;
   font-weight: 600;
   line-height: 1.5;
   color: var(--ink);
 }
-.te-verdict-icon {
-  font-size: 1.1rem;
-  line-height: 1.3;
+/* 말풍선 꼬리 — 구름이 쪽을 향한다 */
+.te-verdict-bubble::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 16px;
+  width: 12px;
+  height: 12px;
+  background: var(--accent-soft);
+  transform: rotate(45deg);
+  border-radius: 2px;
 }
 
 .te-daystrip {
@@ -881,9 +892,14 @@ a {
   line-height: 1.55;
   color: var(--ink-2);
 }
+.te-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.1rem;
+}
 .te-cta {
   justify-self: start;
-  margin-top: 0.1rem;
   padding: 0.55rem 1rem;
   border-radius: 9px;
   font-weight: 700;
@@ -893,6 +909,16 @@ a {
 }
 .te-cta:hover {
   opacity: 0.9;
+}
+.te-cta--hotel {
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.te-cta--hotel:hover {
+  opacity: 1;
+  color: var(--ink);
+  border-color: var(--ink-2);
 }
 
 /* ---------- ranklist ---------- */

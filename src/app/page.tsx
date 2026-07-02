@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import GlobeAirportPicker, {
   type GlobeAirportMarker,
 } from "@/components/GlobeAirportPicker";
+import Gurumi, { type GurumiMood } from "@/components/Gurumi";
 import ResultMap, { type MapPlace } from "@/components/ResultMap";
 import {
   ACTIVITY_LABELS,
@@ -66,10 +67,18 @@ const LOADING_MESSAGES = [
   "날씨랑 협상하는 중 🌤️",
 ] as const;
 
+// KST 사용자가 아침에 접속하면 toISOString(UTC)은 "어제"를 돌려준다 — 로컬 기준으로 포맷.
+function toLocalIso(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function isoAfterDays(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return toLocalIso(date);
 }
 
 // 다가오는 토·일. 오늘이 토요일이면 오늘부터, 일요일이면 다음 주말.
@@ -78,9 +87,17 @@ function upcomingWeekend(): { sat: string; sun: string } {
   const date = new Date();
   const daysUntilSaturday = (6 - date.getDay() + 7) % 7;
   date.setDate(date.getDate() + daysUntilSaturday);
-  const sat = date.toISOString().slice(0, 10);
+  const sat = toLocalIso(date);
   date.setDate(date.getDate() + 1);
-  return { sat, sun: date.toISOString().slice(0, 10) };
+  return { sat, sun: toLocalIso(date) };
+}
+
+// 극한의 P 모드: 오늘 출발, 내일 복귀 (숙소는 가서 잡는 사람들).
+function todayPair(): { today: string; tomorrow: string } {
+  const date = new Date();
+  const today = toLocalIso(date);
+  date.setDate(date.getDate() + 1);
+  return { today, tomorrow: toLocalIso(date) };
 }
 
 function scoreWidth(score: number): string {
@@ -282,6 +299,23 @@ export default function Home() {
     void runSearchWith(next);
   }
 
+  // 극한의 P 모드: 오늘 출발 → 내일 복귀, 국내 근교, 지금 날씨 기준.
+  function applyTodayPreset() {
+    const { today, tomorrow } = todayPair();
+    const next: FormState = {
+      ...form,
+      destination_regions: ["KOREA_GROUND"],
+      earliest_departure: today,
+      latest_return: tomorrow,
+      min_nights: "1",
+      max_nights: "1",
+    };
+    setForm(next);
+    setShowIntro(false);
+    setStep(LAST_STEP);
+    void runSearchWith(next);
+  }
+
   async function runSearch() {
     return runSearchWith(form);
   }
@@ -392,6 +426,13 @@ export default function Home() {
               onClick={applyWeekendPreset}
             >
               이번 주말 어디 가지? →
+            </button>
+            <button
+              type="button"
+              className="te-submit te-intro-cta"
+              onClick={applyTodayPreset}
+            >
+              오늘 바로 떠나기 ⚡
             </button>
             <button
               type="button"
@@ -705,6 +746,7 @@ export default function Home() {
               <DetailCard item={selectedItem} />
             ) : result && result.items.length === 0 ? (
               <div className="te-empty">
+                <Gurumi mood="cloudy" size={44} />
                 <p className="te-empty-title">이번 조건으론 못 찾았어요 🥲</p>
                 <ul>
                   <li>예산을 조금만 올려보면 어때요?</li>
@@ -794,6 +836,19 @@ function DetailCard({ item }: { item: RecommendationItem }) {
   const isNormal = item.weather_source === "NORMAL";
   const matchedLabels = item.matched_activities.map((a) => ACTIVITY_LABELS[a] ?? a);
   const badge = SOURCE_BADGE[item.weather_source];
+  // 구름이 표정: 우천 적응이거나 비 잦으면 우산, 그 외엔 강수확률 따라.
+  const gurumiMood: GurumiMood =
+    item.rain_adaptive || avgPrecip >= 65
+      ? "rainy"
+      : avgPrecip < 20
+        ? "sunny"
+        : avgPrecip < 45
+          ? "partly"
+          : "cloudy";
+  // 정직한 숙소 딥링크: 날짜·목적지만 채워 보낼 뿐, 가격/절약액 주장은 하지 않는다.
+  const hotelUrl = `https://www.booking.com/searchresults.ko.html?ss=${encodeURIComponent(
+    item.destination_name,
+  )}&checkin=${item.depart_date}&checkout=${item.return_date}`;
 
   // 한 줄 판정 (왜 여기?)
   const verdict: string[] = [];
@@ -867,10 +922,10 @@ function DetailCard({ item }: { item: RecommendationItem }) {
         </>
       )}
 
-      <p className="te-verdict">
-        <span className="te-verdict-icon">{sky.icon}</span>
-        <span>{verdict.join(" ")}</span>
-      </p>
+      <div className="te-verdict">
+        <Gurumi mood={gurumiMood} size={48} />
+        <p className="te-verdict-bubble">{verdict.join(" ")}</p>
+      </div>
 
       {item.weather_daily.length > 0 &&
         (item.weather_source === "FORECAST" ? (
@@ -940,18 +995,28 @@ function DetailCard({ item }: { item: RecommendationItem }) {
         <p className="te-total">{item.score_explanations.total}</p>
       </details>
 
-      <a
-        href={item.flight_deeplink_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="te-cta"
-      >
-        {item.transport_mode === "GROUND"
-          ? "가는 법 찾기 →"
-          : item.price_is_live
-            ? "항공권 보기 →"
-            : "실제 요금 검색하기 →"}
-      </a>
+      <div className="te-cta-row">
+        <a
+          href={item.flight_deeplink_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="te-cta"
+        >
+          {item.transport_mode === "GROUND"
+            ? "가는 법 찾기 →"
+            : item.price_is_live
+              ? "항공권 보기 →"
+              : "실제 요금 검색하기 →"}
+        </a>
+        <a
+          href={hotelUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="te-cta te-cta--hotel"
+        >
+          🛏️ 이 날짜 숙소 보기
+        </a>
+      </div>
     </article>
   );
 }
